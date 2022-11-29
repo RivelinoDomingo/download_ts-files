@@ -92,7 +92,7 @@ elif [ "${1##*\/}" = "icon.m3u8" ];then
         PRL="--parallel-max 4"
     fi
 
-    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -r 55-1000000000 -w "file %{filename_effective}\n" "${1%\/*}/icon[0-$IND_FIM].png" > $VID_LS
+    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -r 55- -w "file %{filename_effective}\n" "${1%\/*}/icon[0-$IND_FIM].png" > $VID_LS
 else
     echo "erro de url, passe uma url com final .m3u8"
     exit 1
