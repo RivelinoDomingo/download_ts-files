@@ -57,8 +57,16 @@ fi
 # Comando de download.
 if [ "${1##*\/}" = "index.m3u8" ];then
     curl -s -O --create-dirs --output-dir $PASTA $1
-    if [ $(xxd -l 8 $PASTA/index.m3u8 | awk '{print $6}') != "#EXTM3U." ];then
-        echo "Link expirado!!!"
+    if [ "$(xxd -l 8 $PASTA/index.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
+
+        if [ -e "$PASTA/index.m3u8" ];then
+            pass
+        else
+            echo "Arquivo ausente!! o link passado está correto?: ( $1 )"
+            echo "Saindo!"
+            exit 1
+        fi
+        echo "Link expirado ou o arquivo não é compátivel"
         echo
         cat $PASTA/index.m3u8 | head
         echo
@@ -78,7 +86,15 @@ if [ "${1##*\/}" = "index.m3u8" ];then
 elif [ "${1##*\/}" = "icon.m3u8" ];then
     curl -s -O --create-dirs --output-dir $PASTA $1
     if [ $(xxd -l 8 $PASTA/icon.m3u8 | awk '{print $6}') != "#EXTM3U." ];then
-        echo "Link expirado!!!"
+
+        if [ -e "$PASTA/icon.m3u8" ];then
+            pass
+        else
+            echo "Arquivo ausente!! o link passado está correto?:( $1 )"
+            echo "Saindo!"
+            exit 1
+        fi
+        echo "Link expirado ou o arquivo não é compátivel"
         echo
         cat $PASTA/icon.m3u8 | head
         echo
