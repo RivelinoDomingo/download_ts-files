@@ -5,18 +5,32 @@ PWD="$(pwd)"
 NOME=""
 CFG="$(dirname $(readlink -f $0))/.cfg-tsd.txt"
 
+## Checar dependencias
+if [ -n $(which xxd) ];then
+    if [ -z $(which curl) ];then
+        echo "Dependencia faltando "curl", instale-a. Ex: Debian/Ubuntu "sudo apt install curl""
+        exit 1
+    fi
+    if [ -z $(which ffmpeg) ];then
+        echo "Dependencia faltando "ffmpeg", instale-a. Ex: Debian/Ubuntu "sudo apt install ffmpeg""
+        exit 1
+    fi
+else
+    echo "Dependencia faltando "xxd", instale-a. Ex: Debian/Ubuntu "sudo apt install xxd""
+    exit 1
+fi
+
 # Checando os argumentos passados.
 if [ -z "$1" -o "$1" = "-o" -o "$1" = "--no-remove" ];then
     echo "Download de Vídeos TS(Transmission multimidia)
 para usar é preciso passar o link do vídeo e os argumentos"
-    echo "."
-    echo "."
-    echo "  -o              Nome do arquivo de saída."
-    echo "  --no-remove     não apagar as partes do vídeo, depois de concluído? (padrão apagar)."
-    echo "."
-    echo "."
-    echo "Ex. ts-download https://cdn12.com/video1.ts -o saida.mp4 --no-remove"
-    echo "."
+    echo
+    echo
+    echo " -o              Nome do arquivo de saída."
+    echo " --no-remove     não apagar as partes do vídeo, depois de concluído? (padrão apagar)."
+    echo
+    echo
+    echo "Ex. ts-download https://cdn12.com/video1.ts -o meu_video.mp4"
     exit
 fi
 
@@ -26,7 +40,6 @@ if [ "$2" = "-o" ];then
 elif [ "$3" = "-o" ];then
     NOME=$4
 elif [ -z "$NOME" ];then
-    #echo "Vc não definiu o nome do aqruivo, usando parte do url.!"
     NOME="${1%/*}"
     NOME="${NOME##*/}.mp4"
 fi
@@ -80,7 +93,6 @@ if [ "${1##*\/}" = "index.m3u8" ];then
         PRL="--parallel-max 4"
     fi
 
-
     curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -w "file %{filename_effective}\n" "${1%\/*}/video[0-$IND_FIM].ts"  > $VID_LS
 
 elif [ "${1##*\/}" = "icon.m3u8" ];then
@@ -115,7 +127,6 @@ else
 fi
 
 # Ordenar lista.
-#sort -n -t: -k2 $VID_LS -o $VID_LS
 sort -n $VID_LS -o $VID_LS
 # -------
 echo ".."
