@@ -68,8 +68,17 @@ fi
 # ----------------------------------
 
 # Comando de download.
-if [ "${1##*\/}" = "index.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $1
+
+    ## Tratando link para facilitar
+    if [ "${1##*\.}" = "png" ];then
+        URL=${1##*/}
+        URL="${1%/*}/${URL//[0-9]*.png/""}.m3u8"
+    fi
+
+if [ "${URL##*\/}" = "index.m3u8" ];then
+    curl -s -O --create-dirs --output-dir $PASTA $URL
+
+    #Checando se arquivo é o correto!
     if [ "$(xxd -l 8 $PASTA/index.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
 
         if [ -e "$PASTA/index.m3u8" ];then
@@ -86,6 +95,8 @@ if [ "${1##*\/}" = "index.m3u8" ];then
         echo
         exit 1
     fi
+    ###
+
     IND_FIM=$(tail -n 2 $PASTA/index.m3u8 | awk 'gsub("[a-zA-Z./#-]","")')
     if [ "$IND_FIM" -gt 100 ];then
         PRL="--parallel-max 10"
@@ -93,10 +104,10 @@ if [ "${1##*\/}" = "index.m3u8" ];then
         PRL="--parallel-max 4"
     fi
 
-    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -w "file %{filename_effective}\n" "${1%\/*}/video[0-$IND_FIM].ts"  > $VID_LS
+    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -w "file %{filename_effective}\n" "${URL%\/*}/video[0-$IND_FIM].ts"  > $VID_LS
 
-elif [ "${1##*\/}" = "icon.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $1
+elif [ "${URL##*\/}" = "icon.m3u8" ];then
+    curl -s -O --create-dirs --output-dir $PASTA $URL
     if [ "$(xxd -l 8 $PASTA/icon.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
 
         if [ -e "$PASTA/icon.m3u8" ];then
@@ -120,9 +131,9 @@ elif [ "${1##*\/}" = "icon.m3u8" ];then
         PRL="--parallel-max 4"
     fi
 
-    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -r 55- -w "file %{filename_effective}\n" "${1%\/*}/icon[0-$IND_FIM].png" > $VID_LS
+    curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -r 55- -w "file %{filename_effective}\n" "${URL%\/*}/icon[0-$IND_FIM].png" > $VID_LS
 else
-    echo "erro de url, passe uma url com final .m3u8"
+    echo "erro de url"
     exit 1
 fi
 
