@@ -70,9 +70,12 @@ fi
 # Comando de download.
 
     ## Tratando link para facilitar
-    if [ "${1##*\.}" = "png" ];then
-        URL=${1##*/}
-        URL="${1%/*}/${URL//[0-9]*.png/""}.m3u8"
+    if [ "${1##*\.}" = "png" -o "${1##*\.}" = "ts" ];then
+        URL2=${1##*/}
+        if [ "${URL2%%[0-9]*}" = "video" ];then
+            URL2="index"
+        fi
+        URL="${1%/*}/${URL2%%[0-9]*}.m3u8"
     fi
 
 if [ "${URL##*\/}" = "index.m3u8" ];then
