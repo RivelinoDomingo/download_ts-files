@@ -34,7 +34,7 @@ para usar é preciso passar o link do vídeo e os argumentos"
     exit
 fi
 
-# Definido nome do arquivo, se não for especificado.
+# Definido nome do arquivo, se não for especificado ou for igual a arquivo presente na pasta atual.
 if [ "$2" = "-o" ];then
     NOME=$3
 elif [ "$3" = "-o" ];then
@@ -43,6 +43,24 @@ elif [ -z "$NOME" ];then
     NOME="${1%/*}"
     NOME="${NOME##*/}.mp4"
 fi
+## tratando se nome de arquivo já existir.
+COUNT=1
+MOD="true"
+while [ -e $NOME ];do
+    #echo "Print Nome nº $COUNT  -> "$NOME
+    if [ "$MOD" = "true" ];then
+        NOME=${NOME/./"_$COUNT."}
+    else
+        NOME="${NOME%%_*}_$COUNT.mp4"
+    fi
+
+    COUNT=$(( COUNT + 1 ))
+    MOD="false"
+done
+#echo ""
+#echo "--Saida do while-- Nome -> $NOME"
+#exit 1
+
 #-------------------------------------------------------
 # Trata se nome definido já existir
 if [ "$NOME" = "$(ls | grep "$NOME")" ];then
