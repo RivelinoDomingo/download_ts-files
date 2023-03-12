@@ -64,9 +64,9 @@ done
 #-------------------------------------------------------
 
 # Criando pasta temporaria para download dos videos.
-mkdir "/tmp/tmp_vid_$$"
-PASTA="/tmp/tmp_vid_$$"
-VID_LS="/tmp/tmp_vid_$$/lista-videos.txt"
+mkdir "/tmp/tmp-vid-$$"
+PASTA="/tmp/tmp-vid-$$"
+VID_LS="/tmp/tmp-vid-$$/lista-videos.txt"
 echo "Arquivos vão estar em $PWD"
 echo .
 echo ..
