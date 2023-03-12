@@ -62,12 +62,6 @@ done
 #exit 1
 
 #-------------------------------------------------------
-# Trata se nome definido já existir
-if [ "$NOME" = "$(ls | grep "$NOME")" ];then
-    echo -e "Já que tem um arquivo com mesmo nome! \n$(ls $NOME)"
-    echo "."
-    exit 2
-fi
 
 # Criando pasta temporaria para download dos videos.
 mkdir "/tmp/tmp_vid_$$"
