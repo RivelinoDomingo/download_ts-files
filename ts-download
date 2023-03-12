@@ -91,8 +91,9 @@ fi
     fi
 
 if [ "${URL##*\/}" = "index.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $URL
-
+    #curl -s -O --create-dirs --output-dir $PASTA $URL
+    curl -s -O $URL
+exit 3
     #Checando se arquivo é o correto!
     if [ "$(xxd -l 8 $PASTA/index.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
 
@@ -122,7 +123,9 @@ if [ "${URL##*\/}" = "index.m3u8" ];then
     curl -K $CFG $PRL --output-dir $PASTA -o "video#1" -w "file %{filename_effective}\n" "${URL%\/*}/video[0-$IND_FIM].ts"  > $VID_LS
 
 elif [ "${URL##*\/}" = "icon.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $URL
+    #curl -s -O --create-dirs --output-dir $PASTA $URL
+    curl -s -O $URL
+    exit 3
     if [ "$(xxd -l 8 $PASTA/icon.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
 
         if [ -e "$PASTA/icon.m3u8" ];then
