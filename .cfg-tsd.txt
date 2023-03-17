@@ -1,7 +1,0 @@
-# config file
-#
-# write-out = "file %{filename_effective} # http-code-%{http_code}\n"
-# range = 55-1000000000
--s
---parallel-immediate
--Z

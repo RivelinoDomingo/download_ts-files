@@ -1,26 +1,28 @@
 #! /bin/bash
 
+#set -Eeuo pipefail
+#trap 'echo "${BASH_SOURCE}:${LINENO}:${FUNCNAME:-}"' ERR
+
+
 # Variaveis
 PWD="$(pwd)"
 NOME=""
-CFG="$(dirname $(readlink -f $0))/.cfg-tsd.txt"
 
-## Checar dependencias
-if [ -n $(which xxd) ];then
-    if [ -z $(which curl) ];then
-        echo "Dependencia faltando "curl", instale-a. Ex: Debian/Ubuntu "sudo apt install curl""
-        exit 1
-    fi
-    if [ -z $(which ffmpeg) ];then
-        echo "Dependencia faltando "ffmpeg", instale-a. Ex: Debian/Ubuntu "sudo apt install ffmpeg""
-        exit 1
-    fi
-else
+#### Checar dependencias
+if [ -z $(which curl) ];then
+    echo "Dependencia faltando "curl", instale-a. Ex: Debian/Ubuntu "sudo apt install curl""
+    exit 1
+fi
+if [ -z $(which ffmpeg) ];then
+    echo "Dependencia faltando "ffmpeg", instale-a. Ex: Debian/Ubuntu "sudo apt install ffmpeg""
+    exit 1
+fi
+if [ -z $(which xxd) ];then
     echo "Dependencia faltando "xxd", instale-a. Ex: Debian/Ubuntu "sudo apt install xxd""
     exit 1
 fi
 
-# Checando os argumentos passados.
+#### Checando os argumentos passados.
 if [ -z "$1" -o "$1" = "-o" -o "$1" = "--no-remove" ];then
     echo "Download de Vídeos TS(Transmission multimidia)
 para usar é preciso passar o link do vídeo e os argumentos"
@@ -34,7 +36,7 @@ para usar é preciso passar o link do vídeo e os argumentos"
     exit
 fi
 
-# Definido nome do arquivo, se não for especificado ou for igual a arquivo presente na pasta atual.
+#### Definido nome do arquivo, se não for especificado ou for igual a arquivo presente na pasta atual.
 if [ "$2" = "-o" ];then
     NOME=$3
 elif [ "$3" = "-o" ];then
@@ -43,7 +45,8 @@ elif [ -z "$NOME" ];then
     NOME="${1%/*}"
     NOME="${NOME##*/}.mp4"
 fi
-## tratando se nome de arquivo já existir.
+
+#### tratando se nome de arquivo já existir.
 COUNT=1
 MOD="true"
 while [ -e $NOME ];do
@@ -57,122 +60,118 @@ while [ -e $NOME ];do
     COUNT=$(( COUNT + 1 ))
     MOD="false"
 done
-#echo ""
-#echo "--Saida do while-- Nome -> $NOME"
-#exit 1
 
 #-------------------------------------------------------
 
-# Criando pasta temporaria para download dos videos.
+#### Criando pasta temporaria para download dos videos.
 mkdir "/tmp/tmp-vid-$$"
 PASTA="/tmp/tmp-vid-$$"
-VID_LS="/tmp/tmp-vid-$$/lista-videos.txt"
+echo 
+echo "Trabalhando na pasta temporária: $PASTA"
+echo 
+M3U8="/tmp/tmp-vid-$$/arq_m3u8.m3u8"
+CFG_Curl="/tmp/tmp-vid-$$/lista_down_curl.txt"
+VID_LS="/tmp/tmp-vid-$$/lista-videos-para-ffmpeg.txt"
 echo "Arquivos vão estar em $PWD"
 echo .
 echo ..
 echo ...
 
-# Erro de processamento da opção -o.
+#### Erro de processamento da opção -o.
 if [ "$2" = "-o" -a -z "$3" -o "$3" = "-o" -a -z "$4" ];then
     echo "Opção -o carece de uma string ex. '-o saida-video.mp4'"
     exit
 fi
 # ----------------------------------
 
-# Comando de download.
+#### Comando de download.
 
-    ## Tratando link de entrada para identificar qual tipo de arquivo.
-    if [ "${1##*\.}" = "png" -o "${1##*\.}" = "ts" ];then
-        URL2=${1##*/}
-        if [ "${URL2%%[0-9]*}" = "video" ];then
-            URL2="index"
-        fi
-        URL="${1%/*}/${URL2%%[0-9]*}.m3u8"
-    fi
+    echo "Fazendo o Download..."
 
-if [ "${URL##*\/}" = "index.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $URL
-    #Checando se arquivo é o correto!
-    if [ "$(xxd -l 8 $PASTA/index.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
+    curl --connect-timeout 10 --retry 3 -s -o $M3U8 -f "${1%/*}/{index,icon}.m3u8"
 
-        if [ -e "$PASTA/index.m3u8" ];then
-            pass
-        else
-            echo "Arquivo ausente!! o link passado está correto?: ( $1 )"
-            echo "Saindo!"
-            exit 1
-        fi
-        echo "Link expirado ou o arquivo não é compátivel"
-        echo
-        cat $PASTA/index.m3u8 | head
-        echo
-        echo
-        exit 1
+    #### Definindo downloads simultaneos.
+    IND_FIM=$(tail -n 2 $M3U8 | awk 'gsub("[a-zA-Z./#-]","")')
+    if [ "$IND_FIM" -gt 100 ];then
+        PRL="--parallel-max 10"
+    else
+        PRL="--parallel-max 4"
     fi
     ###
 
-    IND_FIM=$(tail -n 2 $PASTA/index.m3u8 | awk 'gsub("[a-zA-Z./#-]","")')
-    if [ "$IND_FIM" -gt 100 ];then
-        PRL="--parallel-max 10"
-    else
-        PRL="--parallel-max 4"
-    fi
-
-    curl -K $CFG $PRL --output-dir $PASTA -o "video_#1" -w "file %{filename_effective}\n" "${URL%\/*}/video[0-$IND_FIM].ts"  > $VID_LS
-
-elif [ "${URL##*\/}" = "icon.m3u8" ];then
-    curl -s -O --create-dirs --output-dir $PASTA $URL
-    if [ "$(xxd -l 8 $PASTA/icon.m3u8 | awk '{print $6}')" != "#EXTM3U." ];then
-
-        if [ -e "$PASTA/icon.m3u8" ];then
-            pass
+    #### Configurando lista de download.
+    Var_cond=0
+    while IFS= read -r linha || [[ -n "$linha" ]];do
+        #echo $linha
+        if [[ "${linha:0:1}" = "#" ]];then
+            echo "$linha" >> $CFG_Curl
         else
-            echo "Arquivo ausente!! o link passado está correto?:( $1 )"
-            echo "Saindo!"
-            exit 1
+            echo "${linha/"${linha:0:1}"/"url = ${1%/*}/${linha:0:1}"}" >> $CFG_Curl
         fi
-        echo "Link expirado ou o arquivo não é compátivel"
-        echo
-        cat $PASTA/icon.m3u8 | head
-        echo
-        echo
-        exit 1
-    fi
-    IND_FIM=$(tail -n 2 $PASTA/icon.m3u8 | awk 'gsub("[a-zA-Z./#-]","")')
-    if [ "$IND_FIM" -gt 100 ];then
-        PRL="--parallel-max 10"
-    else
-        PRL="--parallel-max 4"
-    fi
+    done < $M3U8
+    # check point.
+    echo ".*."
 
-    curl -K $CFG $PRL --output-dir $PASTA -o "video_#1" -r 55- -w "file %{filename_effective}\n" "${URL%\/*}/icon[0-$IND_FIM].png" > $VID_LS
-else
-    echo "erro de url"
-    exit 1
-fi
+    curl -s --parallel-immediate -Z $PRL --output-dir $PASTA --remote-name-all -K $CFG_Curl
 
-# Ordenar lista.
-sort -n -t '_' -k2 $VID_LS -o $VID_LS
-# -------
+    echo ".*."
+
 echo ".."
 echo "."
-# Juntando arquivos e terminando o processo
+#### Juntando arquivos e terminando o processo
+
+# Verificando se baixou todos os arquivos e corrigindo criptografia.
+while IFS= read -r linha || [[ -n "$linha" ]];do
+    # Baixando arquivos que faltaram
+    while [ "${linha:0:1}" != "#" -a ! -e $PASTA/$linha ];do
+    echo "Baixando arquivos que faltaram por erro! -- $linha"
+        curl -s --output-dir $PASTA $START "${1%/*}/$linha}"
+    done
+
+    # Corrigindo criptografia.
+    if [ "${linha:0:1}" != "#" ];then
+
+        # definindo o byte de inicio do arquivo ###
+        SEEK="0x$(xxd -c 2 -l 1000 "$PASTA/$linha" | awk '/G@/{split($1, a, ":"); print a[1];exit}')"
+        if [ "$SEEK" = "0x" ];then
+            SEEK="0x$(xxd -s 1 -c 2 -l 1000 "$PASTA/$linha" | awk '/G@/{split($1, a, ":"); print a[1];exit}')"
+        fi
+        # ###
+
+        # Modificando os arquivos necessarios ###
+        if [ "$SEEK" != "0x00000000" ];then
+            xxd -s $SEEK "$PASTA/$linha" | xxd -r -s -$SEEK > "$PASTA/${linha%.*}.ts"
+            rm "$PASTA/$linha"
+            echo "file  $PASTA/${linha%.*}.ts" >> $VID_LS
+
+        elif [ "$SEEK" = "0x00000000" ];then
+            echo "file  $PASTA/$linha" >> $VID_LS
+        fi
+        # ###
+    fi
+
+
+done < $M3U8
+
 if [ -e "$VID_LS" ];then
     echo "Juntando os pedaços.."
     echo "..."
-    ffmpeg -v 16 -f concat -safe 0 -i $VID_LS  -c copy "$NOME"
+    Coment="${1%/*}"
+    Coment="Id do vídeo: ${Coment##*/}  <-- | --> Url de download: $1"
+    ffmpeg -v 8 -f concat -safe 0 -i $VID_LS -metadata comment="$Coment" -c copy "$NOME"
     if [ "$?" -eq 1 ];then
         echo "Saindo por erro na hora de juntar os pedaços com ffmpeg"
         exit 1
     fi
     echo "."
+    #### Removendo arquivos temporarios.
     if [ "$2" = "--no-remove" -o "$3" = "--no-remove" -o "$4" = "--no-remove" ];then
         echo "Pedaços baixado do vídeo em: $PASTA/"
         echo ".."
     else
         echo "Removendo pedaços do vídeo e pasta temporaria!"
         echo "."
-        rm $PASTA/*.m3u8 $PASTA/video* $PASTA/*.txt
+        rm $PASTA/*
         rm -dv $PASTA
     fi
     echo "Nome e local do arquivo baixado:"
