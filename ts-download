@@ -45,8 +45,7 @@ elif [ -z "$NOME" ];then
     NOME="${1%/*}"
     NOME="${NOME##*/}.mp4"
 fi
-
-#### tratando se nome de arquivo já existir.
+# tratando se nome de arquivo já existir.
 COUNT=1
 MOD="true"
 while [ -e $NOME ];do
@@ -56,12 +55,13 @@ while [ -e $NOME ];do
     else
         NOME="${NOME%%_*}_$COUNT.mp4"
     fi
-
-    COUNT=$(( COUNT + 1 ))
+    ((COUNT++))
     MOD="false"
 done
+#garantindo que não se crie outro arquivo com mesmo nome no intervalo do download.
+touch $NOME
 
-#-------------------------------------------------------
+# ###-------------------------------------------------------
 
 #### Criando pasta temporaria para download dos videos.
 mkdir "/tmp/tmp-vid-$$"
@@ -73,9 +73,9 @@ M3U8="/tmp/tmp-vid-$$/arq_m3u8.m3u8"
 CFG_Curl="/tmp/tmp-vid-$$/lista_down_curl.txt"
 VID_LS="/tmp/tmp-vid-$$/lista-videos-para-ffmpeg.txt"
 echo "Arquivos vão estar em $PWD"
-echo .
-echo ..
-echo ...
+echo "."
+echo "."
+echo "."
 
 #### Erro de processamento da opção -o.
 if [ "$2" = "-o" -a -z "$3" -o "$3" = "-o" -a -z "$4" ];then
@@ -109,18 +109,18 @@ fi
             echo "${linha/"${linha:0:1}"/"url = ${1%/*}/${linha:0:1}"}" >> $CFG_Curl
         fi
     done < $M3U8
-    # check point.
-    echo ".*."
+    # ###
 
     curl -s --parallel-immediate -Z $PRL --output-dir $PASTA --remote-name-all -K $CFG_Curl
 
     echo ".*."
 
-echo ".."
+echo "."
 echo "."
 #### Juntando arquivos e terminando o processo
 
 # Verificando se baixou todos os arquivos e corrigindo criptografia.
+echo -e "Checando arquivos baixados!\n."
 while IFS= read -r linha || [[ -n "$linha" ]];do
     # Baixando arquivos que faltaram
     while [ "${linha:0:1}" != "#" -a ! -e $PASTA/$linha ];do
@@ -152,12 +152,17 @@ while IFS= read -r linha || [[ -n "$linha" ]];do
 
 
 done < $M3U8
+echo ".*."
+echo "."
 
 if [ -e "$VID_LS" ];then
     echo "Juntando os pedaços.."
-    echo "..."
+    echo "."
     Coment="${1%/*}"
     Coment="Id do vídeo: ${Coment##*/}  <-- | --> Url de download: $1"
+    ###--- remover arquivo de proteção criado antes!
+    rm $NOME
+    ###---
     ffmpeg -v 8 -f concat -safe 0 -i $VID_LS -metadata comment="$Coment" -c copy "$NOME"
     if [ "$?" -eq 1 ];then
         echo "Saindo por erro na hora de juntar os pedaços com ffmpeg"
