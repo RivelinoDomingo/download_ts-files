@@ -6,9 +6,8 @@
 # Receber o link de download!!
 echo -e "\e[01;35mCole abaixo a URL do vídeo para fazer o download!\e[01;32m"
 read -p "Link: " LINK
-echo -e "\e[00m"
 if [ -n "$LINK" ];then
-	echo "Baixado..."
+	echo -e "\e[00m"
 else
 	echo -e "\e[01;31mERRO!!! Saindo por que não foi passado o link de download.\e[00m"
 	exit 1
