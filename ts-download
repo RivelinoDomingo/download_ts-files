@@ -3,6 +3,19 @@
 #set -Eeuo pipefail
 #trap 'echo "${BASH_SOURCE}:${LINENO}:${FUNCNAME:-}"' ERR
 
+#### Mostrando ajuda.
+if [ "$1" = "-h" -o "$1" = "--help" ];then
+    echo
+    echo
+    echo " -o              Nome do arquivo de saída."
+    echo " --no-remove     Não apagar as partes do vídeo, depois de concluído.(padrão apagar)."
+    echo " -h ou --help    Mostra ajuda e sai."
+    echo
+    echo
+    echo "Ex. ts-download -o meu_video.mp4"
+    exit 1
+fi
+
 # Receber o link de download!!
 echo -e "\e[01;35mCole abaixo a URL do vídeo para fazer o download!\e[01;32m"
 read -p "Link: " LINK
@@ -28,18 +41,6 @@ if [ -z $(which ffmpeg) ];then
 fi
 if [ -z $(which xxd) ];then
     echo "Dependencia faltando "xxd", instale-a. Ex: Debian/Ubuntu "sudo apt install xxd""
-    exit 1
-fi
-
-#### Checando os argumentos passados.
-if [ "$1" = "-h" -o "$1" = "--help" ];then
-    echo
-    echo
-    echo " -o              Nome do arquivo de saída."
-    echo " --no-remove     não apagar as partes do vídeo, depois de concluído? (padrão apagar)."
-    echo
-    echo
-    echo "Ex. ts-download -o meu_video.mp4"
     exit 1
 fi
 
