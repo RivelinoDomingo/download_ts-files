@@ -3,6 +3,15 @@
 #set -Eeuo pipefail
 #trap 'echo "${BASH_SOURCE}:${LINENO}:${FUNCNAME:-}"' ERR
 
+echo -e "\e[01;35mCole abaixo a URL do vídeo para fazer o download!\e[01;32m"
+read -p "Link: " LINK
+echo -e "\e[00m"
+if [ -n "$LINK" ];then
+	echo "Baixado..."
+else
+	echo -e "\e[01;31mERRO!!! Saindo por que não foi passado o link de download.\e[00m"
+	exit 1
+fi
 
 # Variaveis
 PWD="$(pwd)"
@@ -23,26 +32,24 @@ if [ -z $(which xxd) ];then
 fi
 
 #### Checando os argumentos passados.
-if [ -z "$1" -o "$1" = "-o" -o "$1" = "--no-remove" ];then
-    echo "Download de Vídeos TS(Transmission multimidia)
-para usar é preciso passar o link do vídeo e os argumentos"
+if [ "$1" = "-h" -o "$1" = "--help" ];then
     echo
     echo
     echo " -o              Nome do arquivo de saída."
     echo " --no-remove     não apagar as partes do vídeo, depois de concluído? (padrão apagar)."
     echo
     echo
-    echo "Ex. ts-download https://cdn12.com/video1.ts -o meu_video.mp4"
-    exit
+    echo "Ex. ts-download -o meu_video.mp4"
+    exit 1
 fi
 
 #### Definido nome do arquivo, se não for especificado ou for igual a arquivo presente na pasta atual.
-if [ "$2" = "-o" ];then
+if [ "$1" = "-o" ];then
+    NOME=$2
+elif [ "$2" = "-o" ];then
     NOME=$3
-elif [ "$3" = "-o" ];then
-    NOME=$4
 elif [ -z "$NOME" ];then
-    NOME="${1%/*}"
+    NOME="${LINK%/*}"
     NOME="${NOME##*/}.mp4"
 fi
 # tratando se nome de arquivo já existir.
@@ -78,7 +85,7 @@ echo "."
 echo "."
 
 #### Erro de processamento da opção -o.
-if [ "$2" = "-o" -a -z "$3" -o "$3" = "-o" -a -z "$4" ];then
+if [ "$1" = "-o" -a -z "$2" -o "$2" = "-o" -a -z "$3" ];then
     echo "Opção -o carece de uma string ex. '-o saida-video.mp4'"
     exit
 fi
@@ -88,7 +95,7 @@ fi
 
     echo "Fazendo o Download..."
 
-    curl --connect-timeout 10 --retry 3 -s -o $M3U8 -f "${1%/*}/{index,icon}.m3u8"
+    curl --connect-timeout 10 --retry 3 -s -o $M3U8 -f "${LINK%/*}/{index,icon}.m3u8"
 
     #### Definindo downloads simultaneos.
     IND_FIM=$(tail -n 2 $M3U8 | awk 'gsub("[a-zA-Z./#-]","")')
@@ -106,7 +113,7 @@ fi
         if [[ "${linha:0:1}" = "#" ]];then
             echo "$linha" >> $CFG_Curl
         else
-            echo "${linha/"${linha:0:1}"/"url = ${1%/*}/${linha:0:1}"}" >> $CFG_Curl
+            echo "${linha/"${linha:0:1}"/"url = ${LINK%/*}/${linha:0:1}"}" >> $CFG_Curl
         fi
     done < $M3U8
     # ###
@@ -125,7 +132,7 @@ while IFS= read -r linha || [[ -n "$linha" ]];do
     # Baixando arquivos que faltaram
     while [ "${linha:0:1}" != "#" -a ! -e $PASTA/$linha ];do
     echo "Baixando arquivos que faltaram por erro! -- $linha"
-        curl -s --output-dir $PASTA $START "${1%/*}/$linha}"
+        curl -s --output-dir $PASTA $START "${LINK%/*}/$linha}"
     done
 
     # Corrigindo criptografia.
@@ -158,8 +165,8 @@ echo "."
 if [ -e "$VID_LS" ];then
     echo "Juntando os pedaços.."
     echo "."
-    Coment="${1%/*}"
-    Coment="Id do vídeo: ${Coment##*/}  <-- | --> Url de download: $1"
+    Coment="${LINK%/*}"
+    Coment="Id do vídeo: ${Coment##*/}  <-- | --> Url de download: $LINK"
     ###--- remover arquivo de proteção criado antes!
     rm $NOME
     ###---
@@ -170,7 +177,7 @@ if [ -e "$VID_LS" ];then
     fi
     echo "."
     #### Removendo arquivos temporarios.
-    if [ "$2" = "--no-remove" -o "$3" = "--no-remove" -o "$4" = "--no-remove" ];then
+    if [ "$1" = "--no-remove" -o "$2" = "--no-remove" ];then
         echo "Pedaços baixado do vídeo em: $PASTA/"
         echo ".."
     else
