@@ -4,15 +4,17 @@
 #trap 'echo "${BASH_SOURCE}:${LINENO}:${FUNCNAME:-}"' ERR
 
 #### Mostrando ajuda.
-if [ "$1" = "-h" -o "$1" = "--help" ];then
+if [ "$1" = "-h" -o "$1" = "--help" -o -z "$1" ];then
+    echo " O ts-download é um utilitário feito em shell script "
+    echo " para ajudar a fazer downloads de arquivos de midia TS"
+    echo " é muito simples, use o comando seguido do nome do arquivo!!"
+    echo ' Ex. ts-download "meu video"'
     echo
     echo
-    echo " -o              Nome do arquivo de saída."
     echo " --no-remove     Não apagar as partes do vídeo, depois de concluído.(padrão apagar)."
     echo " -h ou --help    Mostra ajuda e sai."
     echo
-    echo
-    echo "Ex. ts-download -o meu_video.mp4"
+
     exit 1
 fi
 
@@ -44,15 +46,20 @@ if [ -z $(which xxd) ];then
     exit 1
 fi
 
-#### Definido nome do arquivo, se não for especificado ou for igual a arquivo presente na pasta atual.
-if [ "$1" = "-o" ];then
-    NOME=$2
-elif [ "$2" = "-o" ];then
-    NOME=$3
+#### Definido nome do arquivo, se não for especificado ou for igual ao arquivo presente na pasta atual.
+if [ "$1" != "--no-remove" -o "$2" != "--no-remove" -o "$3" != "--no-remove" -o "$1" != "-h" -o "$1" != "--help" -o "$2" != "-h" -o "$2" != "--help" ];then
+    NOME="$1.mp4"
 elif [ -z "$NOME" ];then
     NOME="${LINK%/*}"
     NOME="${NOME##*/}.mp4"
+    echo ""
+    echo 'Voce não nomeou corretamente ao arquivo, o parametro -o ex: "-o NOME_VIDEO" não foi passado!!!!'
+    echo "Continuar somente com esse ID? $NOME"
+    echo "Pressione ENTER para prosseguir! ou CTRL-C para cancelar!"
+    read continuar_sem_nome
+
 fi
+
 # tratando se nome de arquivo já existir.
 COUNT=1
 MOD="true"
@@ -61,7 +68,7 @@ while [ -e $NOME ];do
     if [ "$MOD" = "true" ];then
         NOME=${NOME/./"_$COUNT."}
     else
-        NOME="${NOME%%_*}_$COUNT.mp4"
+        NOME="${NOME%_*}_$COUNT.mp4"
     fi
     ((COUNT++))
     MOD="false"
@@ -171,9 +178,12 @@ if [ -e "$VID_LS" ];then
     ###--- remover arquivo de proteção criado antes!
     rm $NOME
     ###---
-    ffmpeg -v 8 -f concat -safe 0 -i $VID_LS -metadata comment="$Coment" -c copy "$NOME"
+    ffmpeg -f concat -safe 0 -i $VID_LS -metadata comment="$Coment" -c copy "$NOME" >&log_ffmpeg.txt
     if [ "$?" -eq 1 ];then
         echo "Saindo por erro na hora de juntar os pedaços com ffmpeg"
+        echo -e "...\n"
+        cat log_ffmpeg.txt
+        echo "..."
         exit 1
     fi
     echo "."
